@@ -1,0 +1,136 @@
+import { useEffect, useState } from 'react';
+import QuizHeader from './components/QuizHeader';
+import QuestionCard from './components/QuestionCard';
+import ScorePanel from './components/ScorePanel';
+import { questions } from './data/questions';
+
+const STORAGE_KEY = 'dsa-quiz-progress';
+
+function App() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [score, setScore] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const savedProgress = window.localStorage.getItem(STORAGE_KEY);
+    if (!savedProgress) return;
+
+    try {
+      const parsed = JSON.parse(savedProgress);
+      setCurrentIndex(parsed.currentIndex ?? 0);
+      setSelectedAnswer(parsed.selectedAnswer ?? null);
+      setScore(parsed.score ?? 0);
+      setIsFinished(parsed.isFinished ?? false);
+      setHistory(parsed.history ?? []);
+    } catch (error) {
+      console.error('Falha ao carregar o progresso salvo:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const payload = {
+      currentIndex,
+      selectedAnswer,
+      score,
+      isFinished,
+      history,
+    };
+
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }, [currentIndex, selectedAnswer, score, isFinished, history]);
+
+  useEffect(() => {
+    document.title = isFinished
+      ? 'Resultado final | Quiz DSA 2026'
+      : `Questão ${currentIndex + 1} | Quiz DSA 2026`;
+  }, [currentIndex, isFinished]);
+
+  const currentQuestion = questions[currentIndex];
+  const progress = isFinished
+    ? 100
+    : ((currentIndex + (selectedAnswer !== null ? 1 : 0)) / questions.length) * 100;
+
+  const handleAnswer = (option) => {
+    if (selectedAnswer !== null) return;
+
+    const isCorrect = option === currentQuestion.correctAnswer;
+    const response = {
+      id: currentQuestion.id,
+      question: currentQuestion.question,
+      selectedAnswer: option,
+      correctAnswer: currentQuestion.correctAnswer,
+      isCorrect,
+    };
+
+    setSelectedAnswer(option);
+    if (isCorrect) {
+      setScore((prev) => prev + 1);
+    }
+    setHistory((prev) => [...prev, response]);
+  };
+
+  const handleNext = () => {
+    if (currentIndex === questions.length - 1) {
+      setIsFinished(true);
+      return;
+    }
+
+    setCurrentIndex((prev) => prev + 1);
+    setSelectedAnswer(null);
+  };
+
+  const handleRestart = () => {
+    setCurrentIndex(0);
+    setSelectedAnswer(null);
+    setScore(0);
+    setIsFinished(false);
+    setHistory([]);
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+  };
+
+  if (isFinished) {
+    return (
+      <div className="app-shell">
+        <div className="content-box">
+          <ScorePanel
+            score={score}
+            total={questions.length}
+            history={history}
+            onRestart={handleRestart}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-shell">
+      <div className="content-box">
+        <QuizHeader
+          currentIndex={currentIndex}
+          totalQuestions={questions.length}
+          score={score}
+          progress={progress}
+        />
+
+        <QuestionCard
+          question={currentQuestion}
+          selectedAnswer={selectedAnswer}
+          onSelect={handleAnswer}
+          onNext={handleNext}
+          isLastQuestion={currentIndex === questions.length - 1}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default App;
