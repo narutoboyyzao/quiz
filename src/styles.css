@@ -1,0 +1,45 @@
+import React from 'react';
+
+function ScorePanel({ score, total, history, onRestart }) {
+  const percentage = Math.round((score / total) * 100);
+  const message =
+    percentage >= 80
+      ? 'Excelente! Você dominou os conceitos de JavaScript.'
+      : percentage >= 60
+        ? 'Muito bom! Ainda há espaço para revisar alguns pontos.'
+        : 'Continue praticando. A revisão vai te ajudar a memorizar melhor os conceitos.';
+
+  return (
+    <section className="score-panel">
+      <p className="eyebrow">Resultado final</p>
+      <h2>Seu desempenho</h2>
+
+      <div className="score-ring">
+        <div>
+          <strong>{score}</strong>
+          <span>/{total}</span>
+        </div>
+      </div>
+
+      <p className="percentage">{percentage}% de acertos</p>
+      <p className="result-message">{message}</p>
+
+      <div className="history-list">
+        {history.map((item) => (
+          <div key={item.id} className="history-item">
+            <span>Questão {item.id}</span>
+            <span className={item.isCorrect ? 'result-correct' : 'result-wrong'}>
+              {item.isCorrect ? 'Correta' : 'Incorreta'}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <button type="button" className="restart-button" onClick={onRestart}>
+        Refazer quiz
+      </button>
+    </section>
+  );
+}
+
+export default ScorePanel;
